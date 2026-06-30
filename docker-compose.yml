@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8120:7860"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./sql_cache.json:/app/sql_cache.json
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8121:80"
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped

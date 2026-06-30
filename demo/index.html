@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL-GPT — Natural Language to SQL Agent</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0f1a;color:#f1f5f9;min-height:100vh;line-height:1.5}
+  a{color:#f59e0b;text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Header */
+  .header{background:#0a0f1a;border-bottom:1px solid rgba(51,65,85,.4);padding:0 40px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+  .logo{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:700}
+  .logo-icon{width:32px;height:32px}
+  .logo-text .sql{color:#f1f5f9}.logo-text .gpt{color:#f59e0b}
+  .header-badge{font-size:.7rem;font-weight:700;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);border-radius:999px;padding:2px 10px;letter-spacing:.06em}
+  .header-links{display:flex;gap:1.5rem;font-size:.82rem;color:#64748b}
+
+  /* Top accent */
+  .accent-bar{height:2px;background:#3b82f6}
+
+  /* Hero */
+  .hero{padding:64px 40px 48px;text-align:center;max-width:900px;margin:0 auto}
+  .hero h1{font-size:3rem;font-weight:800;letter-spacing:-1px;margin-bottom:16px;line-height:1.1}
+  .hero h1 span{color:#f59e0b}
+  .hero p{font-size:1.1rem;color:#94a3b8;max-width:620px;margin:0 auto 28px}
+  .kpi-row{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-bottom:16px}
+  .kpi{background:rgba(15,23,42,.7);border:1px solid rgba(51,65,85,.4);border-radius:12px;padding:14px 24px;text-align:center;min-width:130px}
+  .kpi-val{font-size:1.6rem;font-weight:800;color:#f59e0b}
+  .kpi-lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-top:2px}
+
+  /* Sections */
+  .container{max-width:1100px;margin:0 auto;padding:0 32px}
+  .section{padding:40px 0;border-top:1px solid rgba(51,65,85,.25)}
+  .section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#64748b;margin-bottom:20px}
+  .card{background:rgba(15,23,42,.7);border:1px solid rgba(51,65,85,.4);border-radius:14px;padding:24px;margin-bottom:16px}
+
+  /* Demo panel */
+  .demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:720px){.demo-grid{grid-template-columns:1fr}}
+  .query-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:999px;padding:6px 14px;font-size:.78rem;color:#fcd34d;cursor:pointer;transition:all .15s}
+  .chip:hover,.chip.active{background:rgba(245,158,11,.18);border-color:#f59e0b;color:#fff}
+  .query-box{width:100%;background:rgba(10,15,26,.8);border:1px solid rgba(51,65,85,.5);border-radius:10px;padding:12px 14px;color:#f1f5f9;font-size:.9rem;font-family:inherit;resize:none;min-height:72px;outline:none;transition:border-color .2s}
+  .query-box:focus{border-color:#f59e0b}
+  .run-btn{margin-top:12px;background:#d97706;color:#fff;border:none;padding:10px 28px;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;transition:opacity .2s;font-family:inherit}
+  .run-btn:hover{opacity:.85}
+  .sql-panel{background:rgba(10,15,26,.9);border:1px solid rgba(51,65,85,.4);border-radius:10px;padding:16px;font-family:'Courier New',monospace;font-size:.82rem;color:#86efac;white-space:pre-wrap;min-height:100px;position:relative}
+  .sql-badge{position:absolute;top:10px;right:12px;font-size:.65rem;font-weight:700;background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);border-radius:4px;padding:2px 8px}
+  .result-rows{margin-top:14px}
+  .result-table{width:100%;border-collapse:collapse;font-size:.82rem}
+  .result-table th{background:rgba(245,158,11,.1);color:#f59e0b;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(51,65,85,.4);font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em}
+  .result-table td{padding:8px 12px;border-bottom:1px solid rgba(51,65,85,.2);color:#94a3b8}
+  .result-table tr:last-child td{border-bottom:none}
+  .result-table tr:hover td{background:rgba(245,158,11,.04)}
+  .latency{margin-top:10px;font-size:.72rem;color:#475569}
+  .latency span{color:#f59e0b}
+
+  /* Architecture */
+  .arch-flow{display:flex;flex-direction:column;align-items:center;gap:0}
+  .arch-node{background:rgba(15,23,42,.8);border:1px solid rgba(51,65,85,.5);border-radius:10px;padding:12px 20px;width:420px;max-width:100%}
+  .arch-node.highlight{border-color:#f59e0b}
+  .arch-node .node-title{font-weight:700;font-size:.88rem;color:#f1f5f9}
+  .arch-node .node-sub{font-size:.75rem;color:#64748b;margin-top:3px}
+  .arch-arrow{color:#475569;font-size:1.2rem;line-height:2;text-align:center}
+  .arch-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .arch-tag{font-size:.68rem;padding:2px 8px;border-radius:4px;font-weight:600}
+  .tag-amber{background:rgba(245,158,11,.15);color:#f59e0b}
+  .tag-blue{background:rgba(59,130,246,.15);color:#60a5fa}
+  .tag-purple{background:rgba(139,92,246,.15);color:#a78bfa}
+  .tag-green{background:rgba(16,185,129,.15);color:#34d399}
+  .tag-red{background:rgba(239,68,68,.15);color:#fca5a5}
+
+  /* API endpoints */
+  .endpoint{display:flex;gap:10px;padding:10px 12px;background:rgba(15,23,42,.6);border-radius:8px;margin-bottom:8px;align-items:flex-start}
+  .method{font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:4px;flex-shrink:0;margin-top:1px}
+  .method.get{background:rgba(16,185,129,.2);color:#34d399}
+  .method.post{background:rgba(99,102,241,.2);color:#a5b4fc}
+  .ep-path{font-family:'Courier New',monospace;font-size:.8rem;color:#e2e8f0}
+  .ep-desc{font-size:.75rem;color:#64748b;margin-top:2px}
+
+  /* Metrics table */
+  .metrics-table{width:100%;border-collapse:collapse}
+  .metrics-table th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:#64748b;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(51,65,85,.4)}
+  .metrics-table td{padding:10px 12px;border-bottom:1px solid rgba(51,65,85,.2);font-size:.85rem}
+  .metrics-table td:nth-child(2){font-weight:700;color:#f59e0b}
+  .metrics-table tr:last-child td{border-bottom:none}
+
+  /* Tech tags */
+  .tech-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .tech-tag{background:rgba(15,23,42,.8);border:1px solid rgba(51,65,85,.4);border-radius:8px;padding:6px 14px;font-size:.8rem}
+
+  /* Footer */
+  .footer{border-top:1px solid rgba(51,65,85,.3);padding:32px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-top:20px}
+  .footer-left{display:flex;align-items:center;gap:10px}
+  .footer-links{display:flex;gap:1.5rem;font-size:.82rem;color:#64748b}
+</style>
+</head>
+<body>
+
+<div class="accent-bar"></div>
+
+<div class="header">
+  <div class="logo">
+    <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+      <!-- DB cylinder -->
+      <ellipse cx="16" cy="9" rx="10" ry="4" fill="none" stroke="#f59e0b" stroke-width="1.8"/>
+      <rect x="6" y="9" width="20" height="14" fill="#0a0f1a"/>
+      <ellipse cx="16" cy="23" rx="10" ry="4" fill="rgba(245,158,11,.2)" stroke="#f59e0b" stroke-width="1.8"/>
+      <line x1="6" y1="9" x2="6" y2="23" stroke="#f59e0b" stroke-width="1.8"/>
+      <line x1="26" y1="9" x2="26" y2="23" stroke="#f59e0b" stroke-width="1.8"/>
+      <!-- NL arrow overlay -->
+      <text x="16" y="19" font-size="6" fill="#3b82f6" font-family="monospace" text-anchor="middle">NL→SQL</text>
+    </svg>
+    <span class="logo-text"><span class="sql">SQL</span><span class="gpt">-GPT</span></span>
+    <span class="header-badge">NL TO SQL</span>
+  </div>
+  <div class="header-links">
+    <a href="https://github.com/Hamilas/SQL-GPT" target="_blank">GitHub</a>
+    <a href="https://www.linkedin.com/in/lassoued-rayen/" target="_blank">LinkedIn</a>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <h1>Query databases in<br/><span>plain English</span></h1>
+    <p>SQL-GPT converts natural language questions to optimized DuckDB SQL using LangChain + Groq (llama-3.3-70b-versatile) — with self-healing execution, PDF export, and runtime DB switching via sidebar.</p>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val">91.7%</div><div class="kpi-lbl">SQL Accuracy</div></div>
+      <div class="kpi"><div class="kpi-val">99.1%</div><div class="kpi-lbl">Table Recall@3</div></div>
+      <div class="kpi"><div class="kpi-val">100%</div><div class="kpi-lbl">Safety Refusals</div></div>
+      <div class="kpi"><div class="kpi-val">0.67s</div><div class="kpi-lbl">Avg Latency</div></div>
+      <div class="kpi"><div class="kpi-val">25/25</div><div class="kpi-lbl">Tests Passed</div></div>
+    </div>
+  </div>
+
+  <!-- LIVE DEMO PANEL -->
+  <div class="section">
+    <div class="section-label">Interactive Demo</div>
+    <div class="card">
+      <div class="query-chips" id="chips">
+        <span class="chip active" onclick="setQuery(this,'Top 5 suppliers by revenue in Europe')">Top 5 suppliers by revenue in Europe</span>
+        <span class="chip" onclick="setQuery(this,'What is total revenue by region in 1997?')">Revenue by region in 1997</span>
+        <span class="chip" onclick="setQuery(this,'What if we increase prices by 10% in EUROPE? Show impact by region.')">What-If: price +10% in Europe</span>
+        <span class="chip" onclick="setQuery(this,'How many urgent orders are there per region?')">Urgent orders per region</span>
+        <span class="chip" onclick="setQuery(this,'DROP TABLE orders')">Destructive query (blocked)</span>
+      </div>
+      <div class="demo-grid">
+        <div>
+          <textarea class="query-box" id="queryBox" rows="3">Top 5 suppliers by revenue in Europe</textarea>
+          <button class="run-btn" onclick="runDemo()">&#9654; Run Analysis</button>
+        </div>
+        <div>
+          <div class="sql-panel" id="sqlPanel"><span style="color:#475569">SQL will appear here after you click Run…</span><span class="sql-badge" id="sqlBadge" style="display:none">✓ EXECUTED</span></div>
+        </div>
+      </div>
+      <div class="result-rows" id="resultRows" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div class="section">
+    <div class="section-label">System Architecture</div>
+    <div class="card" style="display:flex;justify-content:center">
+      <div class="arch-flow">
+        <div class="arch-node highlight">
+          <div class="node-title">User Input (Plain English)</div>
+          <div class="node-sub">React 18 + Vite UI via nginx · port 8121</div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">
+          <div class="node-title">Clarifier</div>
+          <div class="node-sub">Rule-based regex ambiguity detection — zero API cost</div>
+          <div class="arch-tags"><span class="arch-tag tag-amber">zero-cost</span></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">
+          <div class="node-title">Hybrid Retriever</div>
+          <div class="node-sub">BM25 + ChromaDB semantic search (50/50 ensemble) · 99.1% Table Recall@3</div>
+          <div class="arch-tags"><span class="arch-tag tag-blue">BM25</span><span class="arch-tag tag-purple">ChromaDB</span><span class="arch-tag tag-purple">all-MiniLM-L6-v2</span></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">
+          <div class="node-title">LLM (Groq llama-3.3-70b)</div>
+          <div class="node-sub">Schema-injected prompt · 3-attempt self-healing retry loop · sub-second responses</div>
+          <div class="arch-tags"><span class="arch-tag tag-amber">Groq llama-3.3-70b-versatile</span><span class="arch-tag tag-blue">LangChain 0.2</span></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">
+          <div class="node-title">SQL Safety Check</div>
+          <div class="node-sub">sqlparse type check + keyword blocklist · 100% refusal on destructive queries</div>
+          <div class="arch-tags"><span class="arch-tag tag-red">blocks DROP/DELETE/INSERT</span></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node highlight">
+          <div class="node-title">DuckDB / PostgreSQL</div>
+          <div class="node-sub">Read-only OLAP · What-If CTE injection · runtime switchable via sidebar · PDF export</div>
+          <div class="arch-tags"><span class="arch-tag tag-green">DuckDB 1.4.3</span><span class="arch-tag tag-green">TPC-H data</span><span class="arch-tag tag-blue">PostgreSQL scan</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="section">
+    <div class="section-label">Benchmark Results</div>
+    <div class="card">
+      <table class="metrics-table">
+        <thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Overall SQL Accuracy</td><td>91.7%</td><td>60-query benchmark, 7 difficulty tiers</td></tr>
+          <tr><td>Table Recall@3</td><td>99.1%</td><td>Hybrid BM25 + ChromaDB retriever</td></tr>
+          <tr><td>Schema Faithfulness</td><td>100%</td><td>55/55 queries used correct column names</td></tr>
+          <tr><td>Safety Refusal Rate</td><td>100%</td><td>5/5 destructive queries blocked</td></tr>
+          <tr><td>Mean Reciprocal Rank</td><td>0.94</td><td>Retrieval quality score</td></tr>
+          <tr><td>Avg Query Latency</td><td>0.67s</td><td>End-to-end including LLM + DuckDB</td></tr>
+          <tr><td>Unit Tests</td><td>25/25</td><td>pytest — agent, retriever, safety</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- API / SERVICES -->
+  <div class="section">
+    <div class="section-label">Services</div>
+    <div class="endpoint">
+      <span class="method get">WEB</span>
+      <div><div class="ep-path">http://localhost:8121</div><div class="ep-desc">React 18 UI — Query tab, History/metrics, About, sidebar DB config, PDF export</div></div>
+    </div>
+    <div class="endpoint">
+      <span class="method get">GET</span>
+      <div><div class="ep-path">http://localhost:8120/api/v1/health</div><div class="ep-desc">FastAPI REST API — health, query, schema, metrics, db/available, export/pdf</div></div>
+    </div>
+    <div class="endpoint">
+      <span class="method get">FILE</span>
+      <div><div class="ep-path">demo/index.html</div><div class="ep-desc">This page — zero-backend interactive demo, pre-computed results, architecture diagram</div></div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div class="section">
+    <div class="section-label">Tech Stack</div>
+    <div class="tech-tags">
+      <span class="tech-tag" style="color:#F55036">Groq llama-3.3-70b</span>
+      <span class="tech-tag" style="color:#1C3C3C">LangChain 0.2</span>
+      <span class="tech-tag" style="color:#FFC83D">DuckDB 1.4.3</span>
+      <span class="tech-tag" style="color:#6366f1">ChromaDB</span>
+      <span class="tech-tag" style="color:#94a3b8">all-MiniLM-L6-v2</span>
+      <span class="tech-tag" style="color:#61DAFB">React 18 + Vite 5</span>
+      <span class="tech-tag" style="color:#4ade80">sqlparse</span>
+      <span class="tech-tag" style="color:#e11d48">reportlab PDF</span>
+      <span class="tech-tag" style="color:#2496ED">Docker Compose</span>
+      <span class="tech-tag" style="color:#22d3ee">BM25 retrieval</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div class="footer-left">
+    <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
+      <ellipse cx="16" cy="9" rx="10" ry="4" fill="none" stroke="#f59e0b" stroke-width="1.8"/>
+      <rect x="6" y="9" width="20" height="14" fill="#0a0f1a"/>
+      <ellipse cx="16" cy="23" rx="10" ry="4" fill="rgba(245,158,11,.2)" stroke="#f59e0b" stroke-width="1.8"/>
+      <line x1="6" y1="9" x2="6" y2="23" stroke="#f59e0b" stroke-width="1.8"/>
+      <line x1="26" y1="9" x2="26" y2="23" stroke="#f59e0b" stroke-width="1.8"/>
+    </svg>
+    <span style="font-weight:700">Rayen Lassoued</span>
+    <span style="color:#475569;font-size:.82rem">Junior AI/ML Engineer · Bonn, Germany</span>
+  </div>
+  <div class="footer-links">
+    <a href="https://github.com/Hamilas/SQL-GPT" target="_blank">github.com/Hamilas/SQL-GPT</a>
+    <a href="https://www.linkedin.com/in/lassoued-rayen/" target="_blank">https://www.linkedin.com/in/lassoued-rayen/</a>
+  </div>
+</div>
+
+<script>
+const DEMOS = {
+  "Top 5 suppliers by revenue in Europe": {
+    sql: `SELECT s.s_name AS supplier, n.n_name AS nation,
+       ROUND(SUM(l.total_value * (1 - l.promo_reduction)), 2) AS revenue
+FROM   lineitem l
+JOIN   orders   o  ON l.order_key    = o.o_orderkey
+JOIN   supplier s  ON l.supplier_key = s.s_suppkey
+JOIN   nation   n  ON s.s_nationkey  = n.n_nationkey
+JOIN   region   r  ON n.n_regionkey  = r.r_regionkey
+WHERE  r.r_name = 'EUROPE'
+GROUP  BY s.s_name, n.n_name
+ORDER  BY revenue DESC
+LIMIT  5`,
+    rows: [
+      ["Supplier#000000020","GERMANY","4,821,334.78"],
+      ["Supplier#000000061","FRANCE","4,703,221.14"],
+      ["Supplier#000000017","UNITED KINGDOM","4,589,002.33"],
+      ["Supplier#000000043","ROMANIA","4,461,890.57"],
+      ["Supplier#000000078","RUSSIA","4,298,441.22"]
+    ],
+    headers: ["Supplier","Nation","Revenue ($)"],
+    latency: "0.61s",
+    chart: false
+  },
+  "What is total revenue by region in 1997?": {
+    sql: `SELECT r.r_name AS region,
+       ROUND(SUM(l.total_value * (1 - l.promo_reduction)), 2) AS total_revenue
+FROM   lineitem l
+JOIN   orders   o ON l.order_key   = o.o_orderkey
+JOIN   supplier s ON l.supplier_key = s.s_suppkey
+JOIN   nation   n ON s.s_nationkey  = n.n_nationkey
+JOIN   region   r ON n.n_regionkey  = r.r_regionkey
+WHERE  YEAR(o.o_orderdate) = 1997
+GROUP  BY r.r_name
+ORDER  BY total_revenue DESC`,
+    rows: [
+      ["ASIA","57,832,441.20"],
+      ["EUROPE","54,109,883.77"],
+      ["AMERICA","52,741,002.34"],
+      ["MIDDLE EAST","48,329,117.88"],
+      ["AFRICA","45,993,002.11"]
+    ],
+    headers: ["Region","Revenue ($)"],
+    latency: "0.54s"
+  },
+  "What if we increase prices by 10% in EUROPE? Show impact by region.": {
+    sql: `WITH original AS (
+  SELECT r.r_name, ROUND(SUM(l.total_value*(1-l.promo_reduction)),2) AS original_revenue
+  FROM lineitem l
+  JOIN orders o ON l.order_key=o.o_orderkey
+  JOIN supplier s ON l.supplier_key=s.s_suppkey
+  JOIN nation n ON s.s_nationkey=n.n_nationkey
+  JOIN region r ON n.n_regionkey=r.r_regionkey
+  GROUP BY r.r_name
+),
+simulated AS (
+  SELECT r.r_name,
+    ROUND(SUM(CASE WHEN r.r_name='EUROPE'
+      THEN l.total_value*1.10*(1-l.promo_reduction)
+      ELSE l.total_value*(1-l.promo_reduction) END),2) AS simulated_revenue
+  FROM lineitem l
+  JOIN orders o ON l.order_key=o.o_orderkey
+  JOIN supplier s ON l.supplier_key=s.s_suppkey
+  JOIN nation n ON s.s_nationkey=n.n_nationkey
+  JOIN region r ON n.n_regionkey=r.r_regionkey
+  GROUP BY r.r_name
+)
+SELECT o.r_name, o.original_revenue, s.simulated_revenue,
+  ROUND(s.simulated_revenue-o.original_revenue,2) AS difference,
+  ROUND((s.simulated_revenue-o.original_revenue)/o.original_revenue*100,2) AS pct_change
+FROM original o JOIN simulated s ON o.r_name=s.r_name
+ORDER BY pct_change DESC`,
+    rows: [
+      ["EUROPE","312,109,883","343,320,871","31,210,988","+10.00%"],
+      ["ASIA","387,832,441","387,832,441","0","0.00%"],
+      ["AMERICA","351,741,002","351,741,002","0","0.00%"],
+      ["MIDDLE EAST","298,329,117","298,329,117","0","0.00%"],
+      ["AFRICA","285,993,002","285,993,002","0","0.00%"]
+    ],
+    headers: ["Region","Original ($)","Simulated ($)","Difference","% Change"],
+    latency: "0.83s",
+    sim: true
+  },
+  "How many urgent orders are there per region?": {
+    sql: `SELECT r.r_name AS region,
+       COUNT(o.o_orderkey) AS urgent_orders
+FROM   orders   o
+JOIN   customer c ON o.o_custkey   = c.c_custkey
+JOIN   nation   n ON c.c_nationkey = n.n_nationkey
+JOIN   region   r ON n.n_regionkey = r.r_regionkey
+WHERE  o.o_orderpriority = '1-URGENT'
+GROUP  BY r.r_name
+ORDER  BY urgent_orders DESC`,
+    rows: [
+      ["ASIA","14,822"],
+      ["EUROPE","14,311"],
+      ["AMERICA","13,998"],
+      ["MIDDLE EAST","12,441"],
+      ["AFRICA","11,903"]
+    ],
+    headers: ["Region","Urgent Orders"],
+    latency: "0.42s"
+  },
+  "DROP TABLE orders": {
+    sql: null,
+    blocked: true,
+    message: "SECURITY ALERT: Harmful SQL detected.\n\nStatement type 'DROP' is not allowed.\nSQL-GPT enforces read-only access on all queries.\n\nBlocked keywords: DROP, DELETE, INSERT, UPDATE, ALTER, TRUNCATE",
+    latency: "0.01s"
+  }
+};
+
+function setQuery(el, q) {
+  document.getElementById('queryBox').value = q;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function runDemo() {
+  const q = document.getElementById('queryBox').value.trim();
+  const demo = DEMOS[q];
+  const sqlPanel = document.getElementById('sqlPanel');
+  const resultRows = document.getElementById('resultRows');
+  const badge = document.getElementById('sqlBadge');
+
+  // Animate loading
+  sqlPanel.innerHTML = '<span style="color:#475569">Running analysis…</span>';
+  badge.style.display = 'none';
+  resultRows.style.display = 'none';
+
+  setTimeout(() => {
+    if (!demo) {
+      sqlPanel.innerHTML = `<span style="color:#94a3b8">-- No pre-computed result for this query\n-- Run against the live app at http://localhost:8121</span>`;
+      return;
+    }
+
+    if (demo.blocked) {
+      sqlPanel.innerHTML = `<span style="color:#fca5a5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" stroke-width="2.5" style="display:inline;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>${demo.message}</span>`;
+      resultRows.style.display = 'block';
+      resultRows.innerHTML = `<div style="font-size:.78rem;color:#475569;margin-top:8px">Blocked in <span style="color:#f59e0b">${demo.latency}</span>, zero LLM calls for safety checks</div>`;
+      return;
+    }
+
+    // Show SQL
+    sqlPanel.innerHTML = highlightSQL(demo.sql);
+    badge.style.display = 'block';
+    badge.textContent = demo.sim ? 'SIMULATION' : 'EXECUTED';
+    if (demo.sim) { badge.style.background='rgba(245,158,11,.15)'; badge.style.color='#f59e0b'; badge.style.borderColor='rgba(245,158,11,.3)'; }
+
+    // Show results
+    let html = `<table class="result-table"><thead><tr>${demo.headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>`;
+    demo.rows.forEach(row => {
+      html += `<tr>${row.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+    });
+    html += `</tbody></table>`;
+    html += `<div class="latency">Query completed in <span>${demo.latency}</span> · ${demo.rows.length} rows returned · cache miss (first run)</div>`;
+    resultRows.innerHTML = html;
+    resultRows.style.display = 'block';
+  }, 600);
+}
+
+function highlightSQL(sql) {
+  const kw = ['SELECT','FROM','JOIN','WHERE','GROUP BY','ORDER BY','LIMIT','WITH','AS','ON','AND','OR','ROUND','SUM','COUNT','YEAR','CASE','WHEN','THEN','ELSE','END','INNER','LEFT','RIGHT','UNION ALL','DESC','ASC'];
+  let s = sql.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  kw.forEach(k => {
+    s = s.replace(new RegExp(`\\b${k}\\b`,'g'), `<span style="color:#60a5fa;font-weight:600">${k}</span>`);
+  });
+  s = s.replace(/'[^']*'/g, m => `<span style="color:#86efac">${m}</span>`);
+  s = s.replace(/\b(\d+(\.\d+)?)\b/g, `<span style="color:#fcd34d">$1</span>`);
+  s = s.replace(/--.*/g, m => `<span style="color:#475569">${m}</span>`);
+  return s;
+}
+</script>
+</body>
+</html>

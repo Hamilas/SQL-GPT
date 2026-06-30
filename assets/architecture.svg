@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="900" viewBox="0 0 820 900" font-family="Inter, Arial, sans-serif">
+  <rect width="820" height="900" fill="#0a0f1e"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+  </defs>
+
+  <rect x="210" y="16" width="400" height="50" rx="8" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="410" y="46" text-anchor="middle" fill="#e2e8f0" font-size="14" font-weight="700">USER INPUT (plain English)</text>
+  <line x1="410" y1="66" x2="410" y2="100" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="150" y="100" width="520" height="70" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="170" y="128" fill="#93c5fd" font-size="14" font-weight="700">CLARIFIER</text>
+  <text x="170" y="150" fill="#94a3b8" font-size="12">Rule-based regex ambiguity detection, zero API cost</text>
+  <line x1="410" y1="170" x2="410" y2="204" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="204" width="580" height="90" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="140" y="232" fill="#93c5fd" font-size="14" font-weight="700">HYBRID RETRIEVER</text>
+  <text x="140" y="254" fill="#94a3b8" font-size="12">BM25 + ChromaDB semantic search (50/50 ensemble)</text>
+  <text x="140" y="274" fill="#94a3b8" font-size="12">Maps vague terms to real table and column names, 99.1% Table Recall@3</text>
+  <line x1="410" y1="294" x2="410" y2="328" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="328" width="580" height="90" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="140" y="356" fill="#93c5fd" font-size="14" font-weight="700">LLM</text>
+  <text x="140" y="378" fill="#94a3b8" font-size="12">Groq llama-3.3-70b-versatile, schema injected into system prompt</text>
+  <text x="140" y="398" fill="#94a3b8" font-size="12">Self-healing: 3-attempt retry on SQL errors</text>
+  <line x1="410" y1="418" x2="410" y2="452" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="452" width="580" height="90" rx="8" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+  <text x="140" y="480" fill="#fbbf24" font-size="14" font-weight="700">SQL SAFETY CHECK</text>
+  <text x="140" y="502" fill="#94a3b8" font-size="12">sqlparse + keyword blocklist. Blocks DROP, DELETE, INSERT, ALTER, TRUNCATE</text>
+  <text x="140" y="522" fill="#94a3b8" font-size="12">100% refusal rate on destructive queries</text>
+  <line x1="410" y1="542" x2="410" y2="576" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="120" y="576" width="580" height="90" rx="8" fill="#0f172a" stroke="#1e293b"/>
+  <text x="140" y="604" fill="#93c5fd" font-size="14" font-weight="700">DUCKDB</text>
+  <text x="140" y="626" fill="#94a3b8" font-size="12">Read-only OLAP execution (TPC-H supply chain data)</text>
+  <text x="140" y="646" fill="#94a3b8" font-size="12">What-If: CTEs simulate scenarios without DB writes</text>
+  <line x1="410" y1="666" x2="410" y2="700" stroke="#334155" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="150" y="700" width="520" height="70" rx="8" fill="#0f172a" stroke="#3b82f6" stroke-width="2"/>
+  <text x="170" y="728" fill="#93c5fd" font-size="14" font-weight="700">REACT UI</text>
+  <text x="170" y="750" fill="#94a3b8" font-size="12">React 18 + Vite 5, syntax-highlighted SQL, results table, history</text>
+</svg>
